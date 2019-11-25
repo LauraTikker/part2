@@ -1,20 +1,78 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from 'axios'
+
+const Filter = (props) => {
+  return ( 
+     <form
+        onSubmit={props.searchPerson}>
+        <div>
+          filter shown with
+          <input value={props.newSearch} onChange={props.handleSearchChange} />
+        </div>
+      </form>
+  )
+}
+
+const PersonForm = (props) => {
+  return (
+    <form onSubmit={props.addPerson}>
+        <div>
+          name: <input value={props.newName} onChange={props.handleNameChange} />
+        </div>
+        <div>
+          number: <input value={props.newNumber} onChange={props.handleNumberChange} />
+        </div>
+        <div>
+          <button type="submit">add</button>
+        </div>
+    </form>
+  )
+}
+
+const PersonList = (props) => {
+  const peopleToShow = props.persons.filter(person => (person.name.toLowerCase()).includes(props.newSearch.toLowerCase()))
+
+  return (
+      props.newSearch === "" ? props.persons.map(person => (
+      <li key={person.id}>
+        {person.name} {person.number}
+      </li>))
+      : peopleToShow.map(person => (
+        <li key={person.id}>
+          {person.name} {person.number}
+        </li>))
+  )
+}
+
+const windowsAlert = (props) => {
+    const message = props + ' is already added to the phonebook'
+    window.alert(message)
+  };
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: "Arto Hellas", key: "Arto Hellas", number: "1234567" }
-  ]);
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
-  const [printAll, setPrintAll] = useState(true);
   const [newSearch, setNewSearch] = useState("")
+
+  const hook = () => {
+    console.log('effect')
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        console.log('promise fulfilled')
+        setPersons(response.data)
+      })
+  }
+
+  useEffect(hook, [])
 
   const addPerson = event => {
     event.preventDefault();
     const newPerson = {
       name: newName,
-      key: newName,
-      number: newNumber
+      number: newNumber,
+      id: persons.length + 1
     };
 
     persons.find(person => person.name === newName)
@@ -23,6 +81,10 @@ const App = () => {
     setNewName("");
     setNewNumber("");
   };
+
+  const searchPerson = event => {
+    event.preventDefault();
+  }
 
   const handleNameChange = event => {
     setNewName(event.target.value);
@@ -36,56 +98,15 @@ const App = () => {
     setNewSearch(event.target.value);
   };
 
-  const printCheck = () => {
-    if (printAll === true) {
-      printNames();
-    }
-    else{
-      const people = persons.find(person => person.name === newName);
-      printNames(people);
-    }
-    
-  };
-  const printNames = (props) =>
-    persons.map(person => (
-      <li key={person.key}>
-        {person.name} {person.number}
-      </li>
-    ));
-
-  const windowsAlert = () => {
-    window.alert('${newName} is already added to the phonebook')
-  };
-
   return (
     <div>
       <h2>Phonebook</h2>
-      <form
-        // onSubmit={
-        //   persons.includes(person => person.name === newName)
-        //     ? setPrintAll(false)
-        //     : setPrintAll(true)
-        // }
-      >
-        <div>
-          filter shown with
-          <input value={newSearch} onChange={handleSearchChange} />
-        </div>
-      </form>
+      <Filter searchPerson={searchPerson} handleSearchChange={handleSearchChange} newSearch={newSearch}/>
       <h2>add a new</h2>
-      <form onSubmit={addPerson}>
-        <div>
-          name: <input value={newName} onChange={handleNameChange} />
-        </div>
-        <div>
-          number: <input value={newNumber} onChange={handleNumberChange} />
-        </div>
-        <div>
-          <button type="submit">add</button>
-        </div>
-      </form>
+      <PersonForm addPerson={addPerson} newName={newName} handleNameChange={handleNameChange}
+      newNumber={newNumber} handleNumberChange={handleNumberChange}/>
       <h2>Numbers</h2>
-      <div>{printCheck()}</div>
+      <PersonList persons={persons} newSearch={newSearch}/>
     </div>
   );
 };
