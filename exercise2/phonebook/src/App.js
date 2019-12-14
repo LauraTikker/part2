@@ -1,52 +1,18 @@
 import React, { useState, useEffect } from "react";
-import axios from 'axios'
+import personService from './services/persons'
+import Filter from './components/Filter'
+import PersonForm from './components/PersonForm'
+import PersonList from './components/PersonList'
 
-const Filter = (props) => {
-  return ( 
-     <form
-        onSubmit={props.searchPerson}>
-        <div>
-          filter shown with
-          <input value={props.newSearch} onChange={props.handleSearchChange} />
-        </div>
-      </form>
-  )
-}
+const windowsAlertForUpdate = (newPerson) => {
+    const message = `${newPerson.name}` + ' is already added to the phonebook, replace the old number with a new one?'
+    return window.confirm(message)
+  };
 
-const PersonForm = (props) => {
-  return (
-    <form onSubmit={props.addPerson}>
-        <div>
-          name: <input value={props.newName} onChange={props.handleNameChange} />
-        </div>
-        <div>
-          number: <input value={props.newNumber} onChange={props.handleNumberChange} />
-        </div>
-        <div>
-          <button type="submit">add</button>
-        </div>
-    </form>
-  )
-}
-
-const PersonList = (props) => {
-  const peopleToShow = props.persons.filter(person => (person.name.toLowerCase()).includes(props.newSearch.toLowerCase()))
-
-  return (
-      props.newSearch === "" ? props.persons.map(person => (
-      <li key={person.id}>
-        {person.name} {person.number}
-      </li>))
-      : peopleToShow.map(person => (
-        <li key={person.id}>
-          {person.name} {person.number}
-        </li>))
-  )
-}
-
-const windowsAlert = (props) => {
-    const message = props + ' is already added to the phonebook'
-    window.alert(message)
+  const windowsAlertForDeletion = (person) => {
+    console.log(person.name)
+    const message = `Delete ${person.name}?`
+    return window.confirm(message)
   };
 
 const App = () => {
@@ -56,12 +22,9 @@ const App = () => {
   const [newSearch, setNewSearch] = useState("")
 
   const hook = () => {
-    console.log('effect')
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => {
-        console.log('promise fulfilled')
-        setPersons(response.data)
+    personService.getAllPersons()
+      .then(initialPersons => {
+        setPersons(initialPersons)
       })
   }
 
@@ -75,12 +38,35 @@ const App = () => {
       id: persons.length + 1
     };
 
-    persons.find(person => person.name === newName)
-      ? windowsAlert(newName)
-      : setPersons(persons.concat(newPerson));
+    const existingPerson = persons.find(person => person.name === newPerson.name)
+
+    existingPerson ? (windowsAlertForUpdate(existingPerson) ? (
+      
+      personService.updatePerson(existingPerson.id, {...newPerson, id: existingPerson.id})
+      .then(returnedPerson => {
+        setPersons(persons.map(person => person.id !== existingPerson.id ? person : returnedPerson))
+      }))
+    
+    : console.log('not updated'))
+
+      : personService.addPerson(newPerson)
+      .then(returnedPerson => {
+        setPersons(persons.concat(returnedPerson));
+      })
+      
     setNewName("");
     setNewNumber("");
   };
+
+  const removePerson = (personToBeDeleted) => {
+    windowsAlertForDeletion(personToBeDeleted) 
+    ? personService.removePerson(persons.find(person => person.name === personToBeDeleted.name))
+    .then(returnedPerson => {
+
+      setPersons(persons.filter(person => person.id !== personToBeDeleted.id))
+    }) : console.log('nothing deleted')
+    
+  }
 
   const searchPerson = event => {
     event.preventDefault();
@@ -106,7 +92,7 @@ const App = () => {
       <PersonForm addPerson={addPerson} newName={newName} handleNameChange={handleNameChange}
       newNumber={newNumber} handleNumberChange={handleNumberChange}/>
       <h2>Numbers</h2>
-      <PersonList persons={persons} newSearch={newSearch}/>
+      <PersonList persons={persons} newSearch={newSearch} handlePersonDeletion={removePerson}/>
     </div>
   );
 };
