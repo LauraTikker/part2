@@ -38,7 +38,6 @@ const App = () => {
     }
 
     return (
-
       <div>
         <button onClick={handleBack} type="Click">back</button>
         <h2>{showCountry.name}</h2>
@@ -104,6 +103,8 @@ const App = () => {
       console.log('promise fulfilled2')
       console.log(response.data)
     })
+
+
     return (
       <div>
       <h2>{props[0].name}</h2>
@@ -118,11 +119,6 @@ const App = () => {
         </ul>
       </div>
       <div><img src={props[0].flag} alt={'flag of ' + props[0].name} width={200}/></div>
-      <h2>Weather in {props[0].capital}</h2>
-
-      <h5>temperature</h5>
-
-      <h5>wind</h5>
     </div>
     )
   }
