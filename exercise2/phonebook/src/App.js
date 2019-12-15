@@ -10,16 +10,32 @@ const windowsAlertForUpdate = (newPerson) => {
   };
 
   const windowsAlertForDeletion = (person) => {
-    console.log(person.name)
     const message = `Delete ${person.name}?`
     return window.confirm(message)
   };
+
+  const Notification = ({notification, notificationSuccess}) => {
+    if (notification === null) {
+      return (
+        null
+      )
+    }
+
+    return (
+      <div className={notificationSuccess}>
+          {notification}
+        </div>
+    )
+
+  }
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [newSearch, setNewSearch] = useState("")
+  const [notification, setNotification] = useState(null)
+  const [notificationSuccess, setNotificationSuccess] = useState('notificationSuccess')
 
   const hook = () => {
     personService.getAllPersons()
@@ -44,16 +60,53 @@ const App = () => {
       
       personService.updatePerson(existingPerson.id, {...newPerson, id: existingPerson.id})
       .then(returnedPerson => {
+        setNotification(`Updated ${returnedPerson.name} phonenumber`)
+        
+        setTimeout(() => {
+          setNotification(null)
+        }, 5000)
+        
         setPersons(persons.map(person => person.id !== existingPerson.id ? person : returnedPerson))
-      }))
-    
+        
+      }).catch(error => {
+        setNotification(`The ${newPerson.name} is not in the phonebook`)
+        setNotificationSuccess('notificationError')
+        setTimeout(() => {
+          setNotification(null)
+          setNotificationSuccess('notificationSuccess')
+        }, 5000)
+        setPersons(persons.filter(person => person.name !== newPerson.name))
+    })
+      
+      )
+      
     : console.log('not updated'))
 
       : personService.addPerson(newPerson)
       .then(returnedPerson => {
-        setPersons(persons.concat(returnedPerson));
-      })
-      
+        setNotification(`Added ${returnedPerson.name} to the phonebook`)
+
+        setTimeout(() => {
+          setNotification(null)
+        }, 5000)
+        
+        setPersons(persons.concat(returnedPerson)
+        );
+      }).catch(error => {
+        setNotification(`The ${newPerson.name} is already in the phonebook`)
+        setNotificationSuccess('notificationError')
+        setTimeout(() => {
+          setNotification(null)
+          setNotificationSuccess('notificationSuccess')
+        }, 5000)
+        
+        personService.getAllPersons()
+        .then(initialPersons => {
+          setPersons(initialPersons)
+        })
+
+    })
+    
     setNewName("");
     setNewNumber("");
   };
@@ -62,9 +115,18 @@ const App = () => {
     windowsAlertForDeletion(personToBeDeleted) 
     ? personService.removePerson(persons.find(person => person.name === personToBeDeleted.name))
     .then(returnedPerson => {
-
       setPersons(persons.filter(person => person.id !== personToBeDeleted.id))
-    }) : console.log('nothing deleted')
+    }).catch(error => {
+        setNotification(`The ${personToBeDeleted.name} has already been removed from phonebook`)
+        setNotificationSuccess('notificationError')
+        setTimeout(() => {
+          setNotification(null)
+          setNotificationSuccess('notificationSuccess')
+        }, 5000)
+        setPersons(persons.filter(person => person.id !== personToBeDeleted.id))
+    })
+     
+    : console.log('nothing deleted')
     
   }
 
@@ -86,9 +148,11 @@ const App = () => {
 
   return (
     <div>
+
       <h2>Phonebook</h2>
+      <Notification notification={notification} notificationSuccess={notificationSuccess}/>
       <Filter searchPerson={searchPerson} handleSearchChange={handleSearchChange} newSearch={newSearch}/>
-      <h2>add a new</h2>
+      <h2>Add a new</h2>
       <PersonForm addPerson={addPerson} newName={newName} handleNameChange={handleNameChange}
       newNumber={newNumber} handleNumberChange={handleNumberChange}/>
       <h2>Numbers</h2>
