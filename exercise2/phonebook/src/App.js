@@ -48,68 +48,80 @@ const App = () => {
 
   const addPerson = event => {
     event.preventDefault();
-    const newPerson = {
-      name: newName,
-      number: newNumber,
-      id: persons.length + 1
+
+    if (newName !== "" && newNumber !== "") {
+
+      const newPerson = {
+        name: newName,
+        number: newNumber,
+        id: persons.length + 1
+      };
+
+      const existingPerson = persons.find(person => person.name === newPerson.name)
+
+      existingPerson ? (windowsAlertForUpdate(existingPerson) ? (
+        
+        personService.updatePerson(existingPerson.id, {...newPerson, id: existingPerson.id})
+        .then(returnedPerson => {
+          setNotification(`Updated ${returnedPerson.name} phonenumber`)
+          
+          setTimeout(() => {
+            setNotification(null)
+          }, 5000)
+          
+          setPersons(persons.map(person => person.id !== existingPerson.id ? person : returnedPerson))
+          
+        }).catch(error => {
+          setNotification(`The ${newPerson.name} is not in the phonebook`)
+          setNotificationSuccess('notificationError')
+          setTimeout(() => {
+            setNotification(null)
+            setNotificationSuccess('notificationSuccess')
+          }, 5000)
+          setPersons(persons.filter(person => person.name !== newPerson.name))
+      })
+        
+        )
+        
+      : console.log('not updated'))
+
+        : personService.addPerson(newPerson)
+        .then(returnedPerson => {
+          setNotification(`Added ${returnedPerson.name} to the phonebook`)
+
+          setTimeout(() => {
+            setNotification(null)
+          }, 5000)
+          
+          setPersons(persons.concat(returnedPerson)
+          );
+        }).catch(error => {
+          setNotification(`The ${newPerson.name} is already in the phonebook`)
+          setNotificationSuccess('notificationError')
+          setTimeout(() => {
+            setNotification(null)
+            setNotificationSuccess('notificationSuccess')
+          }, 5000)
+          
+          personService.getAllPersons()
+          .then(initialPersons => {
+            setPersons(initialPersons)
+          })
+
+      })
+
+    } else {
+      setNotification(`Both name and number need to be added`)
+          setNotificationSuccess('notificationError')
+          setTimeout(() => {
+            setNotification(null)
+            setNotificationSuccess('notificationSuccess')
+          }, 5000)
+    }
+      
+      setNewName("");
+      setNewNumber("");
     };
-
-    const existingPerson = persons.find(person => person.name === newPerson.name)
-
-    existingPerson ? (windowsAlertForUpdate(existingPerson) ? (
-      
-      personService.updatePerson(existingPerson.id, {...newPerson, id: existingPerson.id})
-      .then(returnedPerson => {
-        setNotification(`Updated ${returnedPerson.name} phonenumber`)
-        
-        setTimeout(() => {
-          setNotification(null)
-        }, 5000)
-        
-        setPersons(persons.map(person => person.id !== existingPerson.id ? person : returnedPerson))
-        
-      }).catch(error => {
-        setNotification(`The ${newPerson.name} is not in the phonebook`)
-        setNotificationSuccess('notificationError')
-        setTimeout(() => {
-          setNotification(null)
-          setNotificationSuccess('notificationSuccess')
-        }, 5000)
-        setPersons(persons.filter(person => person.name !== newPerson.name))
-    })
-      
-      )
-      
-    : console.log('not updated'))
-
-      : personService.addPerson(newPerson)
-      .then(returnedPerson => {
-        setNotification(`Added ${returnedPerson.name} to the phonebook`)
-
-        setTimeout(() => {
-          setNotification(null)
-        }, 5000)
-        
-        setPersons(persons.concat(returnedPerson)
-        );
-      }).catch(error => {
-        setNotification(`The ${newPerson.name} is already in the phonebook`)
-        setNotificationSuccess('notificationError')
-        setTimeout(() => {
-          setNotification(null)
-          setNotificationSuccess('notificationSuccess')
-        }, 5000)
-        
-        personService.getAllPersons()
-        .then(initialPersons => {
-          setPersons(initialPersons)
-        })
-
-    })
-    
-    setNewName("");
-    setNewNumber("");
-  };
 
   const removePerson = (personToBeDeleted) => {
     windowsAlertForDeletion(personToBeDeleted) 
