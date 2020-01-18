@@ -96,7 +96,7 @@ const App = () => {
           setPersons(persons.concat(returnedPerson)
           );
         }).catch(error => {
-          setNotification(`The ${newPerson.name} is already in the phonebook`)
+          setNotification(JSON.stringify(error.response.data.error))
           setNotificationSuccess('notificationError')
           setTimeout(() => {
             setNotification(null)
